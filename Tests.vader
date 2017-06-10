@@ -25,3 +25,13 @@ Execute(GetCppFilesAlternates - Valid cpp files):
   Assert GetCppFilesAlternates(g:header_cpp_file_enum)   == [".C", ".Impl.H"]
   Assert GetCppFilesAlternates(g:source_cpp_file_enum)   == [".H"]
   Assert GetCppFilesAlternates(g:template_cpp_file_enum) == [".H"]
+
+Execute(GetCppFileWithoutExtension - Invalid and valid cases):
+  AssertEqual GetCppFileWithoutExtension(g:invalid_cpp_file_enum, "not_a_cpp_file"),                   ""
+  AssertEqual GetCppFileWithoutExtension("wrong_parameters", 32),                                      ""
+  AssertEqual GetCppFileWithoutExtension(g:header_cpp_file_enum, "some_header.H"),                     "some_header"
+  AssertEqual GetCppFileWithoutExtension(g:header_cpp_file_enum, "a_path/some_header.H"),              "a_path/some_header"
+  AssertEqual GetCppFileWithoutExtension(g:source_cpp_file_enum, "some_source.C"),                     "some_source"
+  AssertEqual GetCppFileWithoutExtension(g:source_cpp_file_enum, "a_path\some_source.C"),              "a_path\some_source"
+  AssertEqual GetCppFileWithoutExtension(g:template_cpp_file_enum, "some_templates.Impl.H"),           "some_templates"
+  AssertEqual GetCppFileWithoutExtension(g:template_cpp_file_enum, "a_path//\\some_templates.Impl.H"), "a_path//\\some_templates"

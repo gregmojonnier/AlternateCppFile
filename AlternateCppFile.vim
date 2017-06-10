@@ -29,3 +29,16 @@ function! GetCppFilesAlternates(cpp_file_enum)
         return []
     endif
 endfunction
+
+" Returns the given path+filename minus extensions of a cpp file
+" Assumes the caller passes the correct cpp file enum
+function! GetCppFileWithoutExtension(cpp_file_enum, cpp_file)
+    if a:cpp_file_enum == g:header_cpp_file_enum || a:cpp_file_enum == g:source_cpp_file_enum
+        return fnamemodify(a:cpp_file, ":r")
+    elseif a:cpp_file_enum == g:template_cpp_file_enum
+        let l:without_first_extension = fnamemodify(a:cpp_file, ":r")
+        return fnamemodify(l:without_first_extension, ":r")
+    else
+        return ""
+    endif
+endfunction
