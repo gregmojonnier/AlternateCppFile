@@ -1,0 +1,27 @@
+Before:
+  source AlternateCppFile.vim
+
+Execute(IdentifyCppFileType - Invalid cpp files):
+  Assert IdentifyCppFileType("")                         == g:invalid_cpp_file_enum
+  Assert IdentifyCppFileType("not_a_cpp_file_hello")     == g:invalid_cpp_file_enum
+  Assert IdentifyCppFileType(".H")                       == g:invalid_cpp_file_enum
+  Assert IdentifyCppFileType(".Impl.H")                  == g:invalid_cpp_file_enum
+  Assert IdentifyCppFileType(".C")                       == g:invalid_cpp_file_enum
+  Assert IdentifyCppFileType(" .H")                      == g:invalid_cpp_file_enum
+  Assert IdentifyCppFileType(" .Impl.H")                 == g:invalid_cpp_file_enum
+  Assert IdentifyCppFileType(" .C")                      == g:invalid_cpp_file_enum
+
+Execute(IdentifyCppFileType - Valid cpp files):
+  Assert IdentifyCppFileType("some_header.H")            == g:header_cpp_file_enum
+  Assert IdentifyCppFileType("some_templates.Impl.H")    == g:template_cpp_file_enum
+  Assert IdentifyCppFileType("some_source.C")            == g:source_cpp_file_enum
+
+Execute(GetCppFilesAlternates - Invalid cpp file and garbages):
+  Assert GetCppFilesAlternates(g:invalid_cpp_file_enum)  == []
+  Assert GetCppFilesAlternates(3423)                     == []
+  Assert GetCppFilesAlternates("wrong_type")             == []
+
+Execute(GetCppFilesAlternates - Valid cpp files):
+  Assert GetCppFilesAlternates(g:header_cpp_file_enum)   == [".C", ".Impl.H"]
+  Assert GetCppFilesAlternates(g:source_cpp_file_enum)   == [".H"]
+  Assert GetCppFilesAlternates(g:template_cpp_file_enum) == [".H"]
