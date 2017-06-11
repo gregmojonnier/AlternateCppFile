@@ -42,3 +42,37 @@ function! GetCppFileWithoutExtension(cpp_file_enum, cpp_file)
         return ""
     endif
 endfunction
+
+" Wrapped vim's facilities to check if a file exists into
+" a function, solely for mocking in unit tests, I am not
+" aware of a better way to do this in vimscript at this time
+function! DoesFileExistAlready(file_name)
+    return !empty(glob(a:file_name))
+endfunction
+
+" Gets a cpp file's alternate file, only if it exists already
+" for .H which has multiple possible alternates, .C takes priority over .Impl.H
+function! AlternatePreexistingCppFile(file_name)
+    let l:file_type_enum = IdentifyCppFileType(a:file_name)
+
+    if l:file_type_enum != g:invalid_cpp_file_enum
+        let l:base_file_name          = GetCppFileWithoutExtension(l:file_type_enum, a:file_name)
+        let l:alt_cpp_file_extensions = GetCppFilesAlternates(l:file_type_enum)
+
+        for extension in l:alt_cpp_file_extensions
+            let l:alt_file = l:base_file_name . extension
+            if DoesFileExistAlready(l:alt_file)
+                return l:alt_file
+            endif
+        endfor
+    endif
+
+    return ""
+endfunction
+
+function! EditAlternateExistingCppFile()
+    let l:alt_cpp_file = AlternatePreexistingCppFile(bufname("%"))
+    if !empty(l:alt_cpp_file)
+        execute ':e' l:alt_cpp_file
+    endif
+endfunction

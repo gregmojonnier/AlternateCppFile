@@ -27,11 +27,87 @@ Execute(GetCppFilesAlternates - Valid cpp files):
   Assert GetCppFilesAlternates(g:template_cpp_file_enum) == [".H"]
 
 Execute(GetCppFileWithoutExtension - Invalid and valid cases):
-  AssertEqual GetCppFileWithoutExtension(g:invalid_cpp_file_enum, "not_a_cpp_file"),                   ""
-  AssertEqual GetCppFileWithoutExtension("wrong_parameters", 32),                                      ""
-  AssertEqual GetCppFileWithoutExtension(g:header_cpp_file_enum, "some_header.H"),                     "some_header"
-  AssertEqual GetCppFileWithoutExtension(g:header_cpp_file_enum, "a_path/some_header.H"),              "a_path/some_header"
-  AssertEqual GetCppFileWithoutExtension(g:source_cpp_file_enum, "some_source.C"),                     "some_source"
-  AssertEqual GetCppFileWithoutExtension(g:source_cpp_file_enum, "a_path\some_source.C"),              "a_path\some_source"
-  AssertEqual GetCppFileWithoutExtension(g:template_cpp_file_enum, "some_templates.Impl.H"),           "some_templates"
-  AssertEqual GetCppFileWithoutExtension(g:template_cpp_file_enum, "a_path//\\some_templates.Impl.H"), "a_path//\\some_templates"
+  AssertEqual "",                         GetCppFileWithoutExtension(g:invalid_cpp_file_enum, "not_a_cpp_file")
+  AssertEqual "",                         GetCppFileWithoutExtension("wrong_parameters", 32)
+  AssertEqual "some_header",              GetCppFileWithoutExtension(g:header_cpp_file_enum, "some_header.H")
+  AssertEqual "a_path/some_header",       GetCppFileWithoutExtension(g:header_cpp_file_enum, "a_path/some_header.H")
+  AssertEqual "some_source",              GetCppFileWithoutExtension(g:source_cpp_file_enum, "some_source.C")
+  AssertEqual "a_path\some_source",       GetCppFileWithoutExtension(g:source_cpp_file_enum, "a_path\some_source.C")
+  AssertEqual "some_templates",           GetCppFileWithoutExtension(g:template_cpp_file_enum, "some_templates.Impl.H")
+  AssertEqual "a_path//\\some_templates", GetCppFileWithoutExtension(g:template_cpp_file_enum, "a_path//\\some_templates.Impl.H")
+"
+" To effectively test AlternatePreexistingCppFile we must mock
+" DoesFileExistAlready, it resets at the start of each execute() block
+"
+Execute(AlternatePreexistingCppFile - .C files):
+  " force the does_exist! H files to exist
+  function! DoesFileExistAlready(file_name)
+    return a:file_name == "does_exist!.H" ||
+         \ a:file_name == "dir1\dir2/dir3\\dir4//does_exist!.H"
+  endfunction
+
+  " Alternate files DO already exist
+  AssertEqual "does_exist!.H", AlternatePreexistingCppFile("does_exist!.C")
+  AssertEqual "dir1\dir2/dir3\\dir4//does_exist!.H", AlternatePreexistingCppFile("dir1\dir2/dir3\\dir4//does_exist!.C")
+
+  " Alternate files DONT already exist
+  AssertEqual "", AlternatePreexistingCppFile("does_NOT_exist.C")
+  AssertEqual "", AlternatePreexistingCppFile("dir1\dir2/dir3\\dir4//does_NOT_exist!.C")
+
+Execute(AlternatePreexistingCppFile - .Impl.H files):
+  " force the does_exist! H files to exist
+  function! DoesFileExistAlready(file_name)
+    return a:file_name == "does_exist!.H" ||
+         \ a:file_name == "dir1\dir2/dir3\\dir4//does_exist!.H"
+  endfunction
+
+  " Alternate files DO already exist
+  AssertEqual "does_exist!.H", AlternatePreexistingCppFile("does_exist!.Impl.H")
+  AssertEqual "dir1\dir2/dir3\\dir4//does_exist!.H", AlternatePreexistingCppFile("dir1\dir2/dir3\\dir4//does_exist!.Impl.H")
+
+  " Alternate files DONT already exist
+  AssertEqual "", AlternatePreexistingCppFile("does_NOT_exist.Impl.H")
+  AssertEqual "", AlternatePreexistingCppFile("dir1\dir2/dir3\\dir4//does_NOT_exist!.Impl.H")
+
+Execute(AlternatePreexistingCppFile - .H files):
+  " .H file is a little tricker as its alternate could be
+  " .C or .Impl.H, depending on whether either of them exist or not
+
+  " force both to exist
+  function! DoesFileExistAlready(file_name)
+    return 1
+  endfunction
+
+  " .C chosen before .Impl.H
+  AssertEqual "does_exist!.C", AlternatePreexistingCppFile("does_exist!.H")
+
+  " force only .Impl.H to exist
+  function! DoesFileExistAlready(file_name)
+    return a:file_name == "does_exist!.Impl.H"
+  endfunction
+
+  AssertEqual "does_exist!.Impl.H", AlternatePreexistingCppFile("does_exist!.H")
+
+  " force only .C to exist
+  function! DoesFileExistAlready(file_name)
+    return a:file_name == "does_exist!.C"
+  endfunction
+
+  AssertEqual AlternatePreexistingCppFile("does_exist!.H"), "does_exist!.C"
+
+  " force neither to exist
+  function! DoesFileExistAlready(file_name)
+    return 0
+  endfunction
+
+  AssertEqual AlternatePreexistingCppFile("does_exist!.H"), ""
+
+Execute(AlternatePreexistingCppFile - Invalid cpp file names):
+  " force all files to exist so that the non cpp file's
+  " existence couldn't possibly be a source of failure
+  function! DoesFileExistAlready(file_name)
+    return 1
+  endfunction
+
+  AssertEqual "", AlternatePreexistingCppFile("some_file.java")
+  AssertEqual "", AlternatePreexistingCppFile("blah.html")
